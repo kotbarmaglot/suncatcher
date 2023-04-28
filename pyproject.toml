@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "suncatcher"
+version = "0.1.0"
+description = ""
+authors = ["kotbarmaglot <allonewage@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pytelegrambotapi = "^4.10.0"
+vk = "^3.0"
+
+[tool.poetry.scripts]
+sunbot = "suncatcher.sunbot:main"
+vksunbot = "suncatcher.vksunbot:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
