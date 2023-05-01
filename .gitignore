@@ -3,3 +3,5 @@ __pycache__/*
 suncatcher/__pycache__
 suncatcher/__pycache__/*
 suncatcher/config.py
+suncatcher/user_file
+suncatcher/user_file/*
