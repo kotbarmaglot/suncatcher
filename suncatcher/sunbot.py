@@ -4,35 +4,96 @@ import telebot
 import json
 from telebot import types
 from pathlib import Path
+import os
+import sys
 
 
 bot = telebot.TeleBot(API_KEY)
 
 
-def save_message_chat_id(message):
+def message_delete(message, type_del):
+    if type_del == 'message':
+        ms_id = get_message_id(message)
+        if ms_id:
+            bot.delete_message(message.from_user.id, ms_id)
+
+    if type_del == 'media':
+        med_id = get_media_id(message)
+        if med_id:
+            for elem in med_id:
+                bot.delete_message(message.from_user.id, elem)
+
+            save_media_id(message, del_media_id=1)
+
+
+def save_message_id(message):
     user_id = message.chat.id
     user_patch = Path(f"suncatcher/user_file/{user_id}.json")
-
-    print('save message', message)
 
     with open(user_patch, "r") as read_file:
         user_data = json.load(read_file)
 
     user_data['id_mes'] = message.message_id
-    user_data['id_chat'] = message.chat.id
 
     with open(user_patch, "w") as write_file:
         json.dump(user_data, write_file)
 
 
-def get_message_chat_id(message):
+def save_media_id(message, del_media_id=0):
+    media = []
+
+    if del_media_id == 0:
+        for elem in message:
+            media.append(elem.message_id)
+            user_id = elem.chat.id
+
+        user_patch = Path(f"suncatcher/user_file/{user_id}.json")
+
+        with open(user_patch, "r") as read_file:
+            user_data = json.load(read_file)
+            user_data['id_media'] = media
+
+        with open(user_patch, "w") as write_file:
+            json.dump(user_data, write_file)
+
+    if del_media_id == 1:
+        user_id = message.from_user.id
+        user_patch = Path(f"suncatcher/user_file/{user_id}.json")
+
+        with open(user_patch, "r") as read_file:
+            user_data = json.load(read_file)
+            user_data['id_media'] = ''
+
+        with open(user_patch, "w") as write_file:
+            json.dump(user_data, write_file)
+
+
+def get_media_id(message):
     user_id = message.from_user.id
     user_patch = Path(f"suncatcher/user_file/{user_id}.json")
 
-    with open(user_patch, "r") as read_file:
-        user_data = json.load(read_file)
+    if not os.path.exists(user_patch):
+        return False
+    else:
+        with open(user_patch, "r") as read_file:
+            user_data = json.load(read_file)
 
-    return user_data['id_mes'], user_data['id_chat']
+            if user_data['id_media'] != '':
+                return user_data['id_media']
+            else:
+                return False
+
+
+def get_message_id(message):
+    user_id = message.from_user.id
+    user_patch = Path(f"suncatcher/user_file/{user_id}.json")
+
+    if not os.path.exists(user_patch):
+        return False
+    else:
+        with open(user_patch, "r") as read_file:
+            user_data = json.load(read_file)
+            return user_data['id_mes']
 
 
 def set_current_size_sun(message, size):
@@ -94,7 +155,7 @@ def create_or_get_user_file(message):
     user_data['start'] = 1
     user_data['current_size'] = ''
     user_data["id_mes"] = 0
-    user_data['id_chat'] = 0
+    user_data["id_media"] = ''
 
     with open(user_patch, "w") as write_file:
         json.dump(user_data, write_file)
@@ -104,16 +165,16 @@ def create_or_get_user_file(message):
 
 def show_catalog(message):
     title = 'Какие ловцы солнца вы хотите посмотреть:\n\n'
-    big_sun = '1. Ловцы общей длиной 40 см и больше, стоимостью 4000р.\n\n'
-    mid_sun = '2. Ловцы длиной ~ 30 см, стоимостью 3000р.\n\n'
-    low_sun = '3. Ловцы длиной ~ 20 см, стоимостью 2000р.\n\n'
+    big_sun = '1. Большие ловцы - общей длиной 40 см и больше, стоимостью 4000р.\n\n'
+    mid_sun = '2. Средние ловцы ~ 30 см, стоимостью 3000р.\n\n'
+    low_sun = '3. Малые ловцы ~ 20 см, стоимостью 2000р.\n\n'
 
     text = f"{title}{big_sun}{mid_sun}{low_sun}"
 
     markup_inline = types.InlineKeyboardMarkup()
-    item1 = types.InlineKeyboardButton("Большие ловцы", callback_data='big')
-    item2 = types.InlineKeyboardButton("Средние ловцы", callback_data='mid')
-    item3 = types.InlineKeyboardButton("Малые ловцы", callback_data='low')
+    item1 = types.InlineKeyboardButton("💚 Большие ловцы", callback_data='big')
+    item2 = types.InlineKeyboardButton("💛 Средние ловцы", callback_data='mid')
+    item3 = types.InlineKeyboardButton("💜  Малые  ловцы", callback_data='low')
 
     url_photo = 'https://sun9-42.userapi.com/impg/V7H81niHXYdgP2M_ZqbL4lRvuwGQGajdTvkdYw/KqT-wWKWTHw.jpg?size=2560x2560&quality=95&sign=79eab711010666d1651f6001fdf322d9&type=album'
 
@@ -123,9 +184,7 @@ def show_catalog(message):
 
     msg = bot.send_photo(message.from_user.id, url_photo, caption=text, reply_markup=markup_inline)
 
-    save_message_chat_id(msg)
-
-    print(msg)
+    save_message_id(msg)
 
 
 def show_choose_size_suncatcher(message, number_sun, size):
@@ -134,21 +193,17 @@ def show_choose_size_suncatcher(message, number_sun, size):
 
     current_number, type, all_sun = get_current_number_size_sun(message)
 
-    print(big)
-    print(current_number)
-
     url_photo = big[size][number_sun]['url_photo'][0]
     count = f'{size}_count'
     current_sun_text = f'{current_number+1}/{big[count]}'
-    description = big[size][number_sun]['description'] + current_sun_text
 
     markup_inline = types.InlineKeyboardMarkup()
 
     if current_number+1 == big[count]:
-        item = types.InlineKeyboardButton(text='Описание/Фото', callback_data='more')
+        item = types.InlineKeyboardButton(text='💫 Описание/Фото', callback_data='more')
         item2 = types.InlineKeyboardButton(text='⬅️', callback_data='back')
         item3 = types.InlineKeyboardButton(text='⛔️', callback_data='none')
-        item4 = types.InlineKeyboardButton(text='Каталог', callback_data='catalog')
+        item4 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog')
         item5 = types.InlineKeyboardButton(text=f'{current_sun_text}', callback_data='none')
 
         markup_inline.add(item2, item5, item3)
@@ -156,10 +211,10 @@ def show_choose_size_suncatcher(message, number_sun, size):
         markup_inline.add(item4)
 
     if current_number+1 == 1:
-        item = types.InlineKeyboardButton(text='Описание/Фото', callback_data='more')
+        item = types.InlineKeyboardButton(text='💫 Описание/Фото', callback_data='more')
         item2 = types.InlineKeyboardButton(text='⛔️', callback_data='none')
         item3 = types.InlineKeyboardButton(text='➡️', callback_data='next')
-        item4 = types.InlineKeyboardButton(text='Каталог', callback_data='catalog')
+        item4 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog')
         item5 = types.InlineKeyboardButton(text=f'{current_sun_text}', callback_data='none')
 
         markup_inline.add(item2, item5, item3)
@@ -167,80 +222,106 @@ def show_choose_size_suncatcher(message, number_sun, size):
         markup_inline.add(item4)
 
     if 1 < current_number+1 < big[count]:
-        item = types.InlineKeyboardButton(text='Описание/Фото', callback_data='more')
+        item = types.InlineKeyboardButton(text='💫 Описание/Фото', callback_data='more')
         item2 = types.InlineKeyboardButton(text='⬅️', callback_data='back')
         item3 = types.InlineKeyboardButton(text='➡️', callback_data='next')
-        item4 = types.InlineKeyboardButton(text='Каталог', callback_data='catalog')
+        item4 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog')
         item5 = types.InlineKeyboardButton(text=f'{current_sun_text}', callback_data='none')
 
         markup_inline.add(item2, item5, item3)
         markup_inline.add(item)
         markup_inline.add(item4)
 
-    ms, ch = get_message_chat_id(message)
-
-    bot.delete_message(message.from_user.id, ms)
-    
+    message_delete(message, type_del='message')
 
     msg = bot.send_photo(message.from_user.id, url_photo,  reply_markup=markup_inline)
 
-    save_message_chat_id(msg)
+    save_message_id(msg)
 
 
 def show_choose_size_suncatcher_more(message, number_sun, size):
-    
     big = get_moon(size)
 
-    current_number, type, all_sun = get_current_number_size_sun(message)
+    url_photo = big[size][number_sun]['url_photo']
+    description = big[size][number_sun]['description']
 
-    print(big)
-    print(current_number)
+    media = []
 
-    url_photo = big[size][number_sun]['url_photo'][0]
-    count = f'{size}_count'
-    current_sun_text = f'{current_number+1}/{big[count]}'
-    description = big[size][number_sun]['description'] + current_sun_text
+    for url in url_photo:
+        media.append(types.InputMediaPhoto(url))
+
+    msg_med = bot.send_media_group(message.from_user.id, media)
+
+    save_media_id(msg_med)
 
     markup_inline = types.InlineKeyboardMarkup()
 
-    item = types.InlineKeyboardButton(text='Заказать', url='https://t.me/Lunar_room')
-    item4 = types.InlineKeyboardButton(text='Каталог', callback_data='catalog')
+    item = types.InlineKeyboardButton(text='✅ Выбрать', callback_data='choose')
+    item2 = types.InlineKeyboardButton(text='⬅️ Назад', callback_data='back')
+    item4 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog')
+
+    markup_inline.add(item)
+    markup_inline.add(item2)
+    markup_inline.add(item4)
+
+    message_delete(message, type_del='message')
+
+    msg = bot.send_message(message.from_user.id, text=description, reply_markup=markup_inline)
+
+    save_message_id(msg)
+
+
+def choose(message, number_sun, size):
+
+    big = get_moon(size)
+
+    url_photo = big[size][number_sun]['url_photo'][0]
+    description = big[size][number_sun]['description'] + f'\n\nКто выбрал?\nNickname: @{message.from_user.username}'
+
+    text = '🎁 Отличный выбор! Чтобы связаться с мастером, нажмите кнопку "✍️ Написать мастеру".\n\nПосле чего откроется диалог с Оксаной и вы можете начать его с любого сообщения. Не стесняйтесь, можно написать просто "привет, хочу сделать заказ". Она уже получила уведомление о том, какой ловец вы выбрали.  '
+
+    markup_inline = types.InlineKeyboardMarkup()
+
+    item = types.InlineKeyboardButton(text='✍️ Написать мастеру', url='https://t.me/Lunar_room')
+    item4 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog')
 
     markup_inline.add(item)
     markup_inline.add(item4)
 
-    ms, ch = get_message_chat_id(message)
+    message_delete(message, type_del='message')
 
-    bot.delete_message(message.from_user.id, ms)
-    
-    msg = bot.send_photo(message.from_user.id, url_photo, caption=description, reply_markup=markup_inline)
+    msg = bot.send_photo(message.from_user.id, url_photo, caption=text, reply_markup=markup_inline)
 
-    save_message_chat_id(msg)
+    save_message_id(msg)
 
-
-def mid_suncatcher(message):
-    pass
-
-
-def low_suncatcher(message):
-    pass
+    bot.send_photo(-1001976282334, url_photo, caption=description)
 
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    print('start', message)
+    bot.delete_message(message.from_user.id, message.message_id)
+
+    try:
+        message_delete(message, type_del='message')
+        message_delete(message, type_del='media')
+
+    except Exception:
+        create_or_get_user_file(message)
 
     create_or_get_user_file(message)
 
     user_name = message.from_user.first_name
-    text_message = "Привет, " + f"{user_name}!" + "\n\nМеня зовут Оксана. Я создательница ловцов солнца. Хочешь я покажу тебе каталог товаров?"
-    url_photo = "https://sun9-54.userapi.com/impg/vnK5xGTaFNIB8DjusXniXDLUweZ8mp9O9H398g/d9_He-KNepo.jpg?size=1440x2160&quality=95&sign=ead03b10d6230c7a345507663da80d7f&type=album"
-    markup_inline = types.InlineKeyboardMarkup()
-    item1 = types.InlineKeyboardButton(text='Каталог', callback_data='catalog')
-    markup_inline.add(item1)
-    msg = bot.send_photo(message.from_user.id, url_photo, caption=text_message, reply_markup=markup_inline)
+    text_message = f'Привет, {user_name}! \nДобро пожаловать в каталог с ловцами солнца 🌈✨\n\nВы можете посмотреть здесь наличие.\n\nА если выберете цветочную луну по душе, то чат-бот пришлёт вам инструкцию как связаться с Оксаной, создательницей ловцов солнца.'
 
-    save_message_chat_id(msg)
+    url_photo = Path("suncatcher/admin_file/oksa.jpg")
+    img = open(url_photo, 'rb')
+    markup_inline = types.InlineKeyboardMarkup()
+    item1 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog')
+    markup_inline.add(item1)
+
+    msg = bot.send_photo(message.from_user.id, img, caption=text_message, reply_markup=markup_inline)
+
+    save_message_id(msg)
 
 
 @bot.callback_query_handler(func=lambda m: True)
@@ -248,9 +329,8 @@ def callback_choice(message):
     t = message.data
 
     if t == 'catalog':
-        ms, ch = get_message_chat_id(message)
-        bot.delete_message(message.from_user.id, ms)
-
+        message_delete(message, type_del='message')
+        message_delete(message, type_del='media')
         set_current_size_sun(message, size='')
         show_catalog(message)
         set_current_number_sun(message, current=0, size='big')
@@ -270,14 +350,14 @@ def callback_choice(message):
         show_choose_size_suncatcher(message, number_sun=0, size=t)
 
     if t == 'next':
+        message_delete(message, type_del='media')
         number, size, all = get_current_number_size_sun(message)
-        print(number)
         set_current_number_sun(message, current=number+1, size=size)
         show_choose_size_suncatcher(message, number_sun=number+1, size=size)
 
     if t == 'back':
+        message_delete(message, type_del='media')
         number, size, all = get_current_number_size_sun(message)
-        print(number)
         set_current_number_sun(message, current=number-1, size=size)
         show_choose_size_suncatcher(message, number_sun=number-1, size=size)
 
@@ -285,26 +365,16 @@ def callback_choice(message):
         number, size, all = get_current_number_size_sun(message)
         show_choose_size_suncatcher_more(message, number_sun=number, size=size)
 
-
-# @bot.message_handler(func=lambda m: True)
-# def handler(message):
-
-#     t = message.text
-
-#     if t == 'Каталог':
-#         set_current_size_sun(message, size='')
-#         show_catalog(message)
-#         set_current_number_sun(message, current=0, size='big')
-#         set_current_number_sun(message, current=0, size='mid')
-#         set_current_number_sun(message, current=0, size='low')
-        
+    if t == 'choose':
+        number, size, all = get_current_number_size_sun(message)
+        message_delete(message, type_del='media')
+        choose(message, number_sun=number, size=size)
 
 
-#     if t == "Средние ловцы":
-#         mid_suncatcher(message)
+@bot.message_handler(func=lambda m: True)
+def handler(message):
+    pass
 
-#     if t == "Малые ловцы":
-#         low_suncatcher(message)
 
 bot.infinity_polling()
 
