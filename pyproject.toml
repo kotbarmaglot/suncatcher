@@ -6,9 +6,10 @@ authors = ["kotbarmaglot <allonewage@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11"
 pytelegrambotapi = "^4.10.0"
 vk = "^3.0"
+telebot = "^0.0.5"
 
 [tool.poetry.scripts]
 sunbot = "suncatcher.sunbot:main"
