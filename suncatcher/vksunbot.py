@@ -1,5 +1,6 @@
 import vk
 from .config import VK_TOKEN_USER, VK_MARKET_ID
+from pathlib import Path
 
 vkapi = vk.API(VK_TOKEN_USER)
 
@@ -15,6 +16,16 @@ def get_url_photo_list(data):
             if x['type'] == 'x':
                 out_list.append(x['url'])
     return out_list
+
+
+def create_catalog_file(data=market_get()):
+    catalog_patch = Path(f"suncatcher/user_file/catalog_file.json")
+    suns = {}
+    suns['big'] = {}
+    suns['mid'] = {}
+    suns['low'] = {}
+    
+    suns[f'{size}_count'] = 0
 
 
 def get_moon(size, data=market_get()):
