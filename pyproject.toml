@@ -9,11 +9,11 @@ readme = "README.md"
 python = ">=3.11"
 pytelegrambotapi = "^4.11.0"
 vk = "^3.0"
-telebot = "^0.0.5"
 
 [tool.poetry.scripts]
 sunbot = "suncatcher.sunbot:main"
 vksunbot = "suncatcher.vksunbot:main"
+db = "suncatcher.db:main"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,11 +1,16 @@
 from .config import API_KEY, API_KEY2
 from .vksunbot import get_moon, get_moon_amount, create_catalog_file
+from .user import *
+from .patch1 import patch1
+from .db import insert_table_user, get_amount_suncatcher, sell_suncatcher, get_url_suncatcher
 import telebot
 import json
 from telebot import types
+import pathlib
 from pathlib import Path
 import os
 import sys
+from pprint import pprint
 
 
 bot = telebot.TeleBot(API_KEY2)
@@ -148,10 +153,6 @@ def get_current_number_size_sun(message):
     return current_number, current_size, all_size
 
 
-def update_catalog():
-    pass
-
-
 def create_or_get_user_file(message):
     user_id = message.from_user.id
     user_patch = Path(f"suncatcher/user_file/{user_id}.json")
@@ -200,18 +201,13 @@ def show_catalog(message, step_pre=0):
     markup_inline.add(item2)
     markup_inline.add(item3)
 
-
-
-    if step_pre == 0:
-        ms_id = get_message_id(message)
-
-        bot.edit_message_media(chat_id=message.from_user.id, message_id=ms_id, media=types.InputMediaPhoto(url_photo, caption=text, parse_mode='HTML'), reply_markup=markup_inline)
-    
-    else:
-
+    if step_pre == 'media':
         msg = bot.send_photo(message.from_user.id, url_photo, caption=text, reply_markup=markup_inline, parse_mode='HTML')
-
         save_message_id(msg)
+    else:
+        ms_id = get_message_id(message)
+        bot.edit_message_media(chat_id=message.from_user.id, message_id=ms_id, media=types.InputMediaPhoto(url_photo, caption=text, parse_mode='HTML'), reply_markup=markup_inline)
+
 
 def show_choose_size_suncatcher(message, number_sun, size, next_update=0, step_pre=0):
     sun = get_moon(size)
@@ -233,6 +229,10 @@ def show_choose_size_suncatcher(message, number_sun, size, next_update=0, step_p
 
     markup_inline = types.InlineKeyboardMarkup()
 
+    if message.from_user.id == 257930228:
+        item7 = types.InlineKeyboardButton(text='Продано', callback_data='sell_suncatcher')
+        markup_inline.add(item7)
+
     item = types.InlineKeyboardButton(text='💫 Описание/Фото', callback_data='more')
     item2 = types.InlineKeyboardButton(text='⬅️', callback_data=callback_data_back)
     item3 = types.InlineKeyboardButton(text='➡️', callback_data=callback_data_next)
@@ -246,13 +246,13 @@ def show_choose_size_suncatcher(message, number_sun, size, next_update=0, step_p
     markup_inline.add(item4)
 
     if next_update == 0:
-        if step_pre == 0:
-            ms_id = get_message_id(message)
-            bot.edit_message_media(chat_id=message.from_user.id, message_id=ms_id, media=types.InputMediaPhoto(url_photo), reply_markup=markup_inline)
-        else:
+        if step_pre == 'media':
             message_delete(message, type_del='message')
             msg = bot.send_photo(message.from_user.id, url_photo,  reply_markup=markup_inline)
             save_message_id(msg)
+        else:
+            ms_id = get_message_id(message)
+            bot.edit_message_media(chat_id=message.from_user.id, message_id=ms_id, media=types.InputMediaPhoto(url_photo), reply_markup=markup_inline)
     
     if next_update == 'next':
         ms_id = get_message_id(message)
@@ -271,8 +271,6 @@ def show_choose_size_suncatcher_more(message, number_sun, size):
         media.append(types.InputMediaPhoto(url))
 
     msg_med = bot.send_media_group(message.from_user.id, media)
-
-    # print(msg_med[0])
 
     save_media_id(msg_med)
 
@@ -297,7 +295,7 @@ def choose(message, number_sun, size, step_pre=0):
 
     url_photo = sun[size][number_sun]['url_photo'][0]
 
-    text = '👍 Отличный выбор! Для заказа этого ловца солнца нажмите: \n\n✍️ Написать - чтобы связаться с мастером и лично обсудить детали заказа и доставки.\n\n🎁 Заказать - чтобы пройти процедуру заказа в автоматическом режиме.'
+    text = '👍 Для заказа этого ловца солнца нажмите: \n\n✍️ Написать - чтобы связаться с мастером и лично обсудить детали заказа и доставки.\n\n🎁 Заказать - чтобы пройти процедуру заказа в автоматическом режиме.'
 
     markup_inline = types.InlineKeyboardMarkup()
 
@@ -309,14 +307,13 @@ def choose(message, number_sun, size, step_pre=0):
     markup_inline.add(item, item2)
     markup_inline.add(item3, item4)
 
-    if step_pre == 0:
-        ms_id = get_message_id(message)
-        bot.edit_message_media(chat_id=message.from_user.id, message_id=ms_id, media=types.InputMediaPhoto(url_photo, caption=text), reply_markup=markup_inline)
-    
-    else:
+    if step_pre == 'media':
         message_delete(message, type_del='message')
         msg = bot.send_photo(message.from_user.id, url_photo, caption=text, reply_markup=markup_inline)
         save_message_id(msg)
+    else:
+        ms_id = get_message_id(message)
+        bot.edit_message_media(chat_id=message.from_user.id, message_id=ms_id, media=types.InputMediaPhoto(url_photo, caption=text), reply_markup=markup_inline)
 
     # bot.send_photo(-1001976282334, url_photo, caption=description)
     chat = bot.get_chat(message.from_user.id)
@@ -359,8 +356,11 @@ def order_sun_via_bot(message, step):
 
         item = types.InlineKeyboardButton(text='💁‍♀️ Для себя', callback_data='forme')
         item2 = types.InlineKeyboardButton(text='🎁 В подарок', callback_data='forgift')
+        item3 = types.InlineKeyboardButton(text='⬅️ Назад', callback_data='back2')
+        item4 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog')
 
         markup_inline.add(item, item2)
+        markup_inline.add(item3, item4)
 
         ms_id = get_message_id(message)
 
@@ -429,7 +429,13 @@ def order_sun_via_bot(message, step):
 
 @bot.message_handler(commands=['start'])
 def start(message):
+
+    insert_table_user(message)
+    get_amount_suncatcher()
+
     bot.delete_message(message.from_user.id, message.message_id)
+
+    # create_user_file(message)
 
     try:
         message_delete(message, type_del='message')
@@ -442,7 +448,7 @@ def start(message):
 
     user_name = message.from_user.first_name if message.from_user.first_name else message.from_user.username
 
-    text_message = f'Привет, {user_name}! \n\nДобро пожаловать в каталог с ловцами солнца 🌈✨\n\nВы можете посмотреть здесь наличие.\n\nА если выберете цветочную луну по душе, то чат-бот пришлёт вам инструкцию как связаться с Оксаной, создательницей ловцов солнца.'
+    text_message = f'Привет, {user_name}! \n\nДобро пожаловать в каталог с ловцами солнца 🌈✨\n\nВы можете посмотреть здесь наличие.\n\nА если выберете цветочную луну по душе, то чат-бот пришлёт вам инструкцию, как заказать ловец солнца.'
 
     url_photo = Path("suncatcher/admin_file/oksa.jpg")
     img = open(url_photo, 'rb')
@@ -460,8 +466,6 @@ def callback_choice(message):
     t = message.data
 
     if t == 'catalog':
-        # message_delete(message, type_del='message')
-        # message_delete(message, type_del='media')
         set_current_size_sun(message, size='')
         show_catalog(message)
         set_current_number_sun(message, current=0, size='big')
@@ -508,6 +512,7 @@ def callback_choice(message):
         # message_delete(message, type_del='media')
         choose(message, number_sun=number, size=size)
 
+# Когда предыдущий шаг формирует сообщение из группы картинок, метод edit_message не подходит. Поэтому приходится удалять сообщение и отправлять новое. Это касается всех функций с параметром step_pre.
     if t == 'choose1':
         number, size, all = get_current_number_size_sun(message)
         message_delete(message, type_del='media')
@@ -535,6 +540,9 @@ def callback_choice(message):
 
     if t == 'input_adress':
         order_sun_via_bot(message, step=t)
+
+    if t == 'sell_suncatcher':
+        sell_suncatcher()
 
 
 @bot.message_handler(func=lambda m: True)
