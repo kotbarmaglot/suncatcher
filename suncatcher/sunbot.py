@@ -1,6 +1,5 @@
 from .config import API_KEY, API_KEY2
 from .vksunbot import get_moon, get_moon_amount, create_catalog_file
-from .user import *
 from .patch1 import patch1
 from .db import insert_table_user, get_amount_suncatcher, sell_suncatcher, get_url_suncatcher
 import telebot
