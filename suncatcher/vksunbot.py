@@ -14,8 +14,6 @@ def market_get():
 
 def get_catalog_vk(data=market_get()):
 
-    # print(data)
-
     suns = {}
     suns['big'] = []
     suns['mid'] = []
