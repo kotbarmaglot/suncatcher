@@ -19,7 +19,7 @@ def get_catalog_vk(data=market_get()):
     suns['mid'] = []
     suns['low'] = []
     suns['amount'] = {}
-    suns['date'] = str(datetime.datetime.now())[0:10]
+    # suns['date'] = str(datetime.datetime.now())[0:10]
     
     for elem in data['items']:
         suncatcher = {}
@@ -149,14 +149,6 @@ def get_moon_amount():
 
     return amount
 
-# update_catalog_file()
-# print(datetime.datetime.now())
-
-# get_catalog_vk()
-# print(datetime.datetime.now())
-
-# get_moon('big')
-# print(datetime.datetime.now())
 
 def main():
     pass

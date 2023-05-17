@@ -1,6 +1,6 @@
 from .config import API_KEY, API_KEY2 
 from .vksunbot import get_moon, get_moon_amount, create_catalog_file
-from .db import update_table_user, get_amount_suncatcher, get_url_suncatcher, get_suncather_catalog, update_current_state, get_current_state, get_user, insert_table_suncatcher, update_step_order, update_table_press_start, create_table_press_start, get_table_press_start, update_user_path, get_user_path, create_table_user_path, get_user_path, create_table_current_state, update_order, get_order, create_table_all, insert_table_suncatcher_photo, create_table_user
+from .db import update_table_user, get_amount_suncatcher, get_url_suncatcher, get_suncather_catalog, update_current_state, get_current_state, get_user, insert_table_suncatcher, update_step_order, update_table_press_start, create_table_press_start, get_table_press_start, update_user_path, get_user_path, create_table_user_path, get_user_path, create_table_current_state, update_order, get_order, create_table_all, insert_table_suncatcher_photo, create_table_user, get_table
 import telebot
 import json
 from telebot import types
@@ -14,6 +14,34 @@ import datetime
 
 bot = telebot.TeleBot(API_KEY2)
 
+table = ['user','suncatcher', 'suncatcher_photo', 'press_start', 'current_state', 'user_path', 'order', 'step_order']
+
+admin = [257930228, 1820161475]
+
+
+def update_patch():
+    fds = sorted(os.listdir('suncatcher/user_file/'))
+
+    for js in fds:
+        with open(f'suncatcher/user_file/{js}') as f:
+            user = json.load(f)
+
+            try:
+                bot.delete_message(user['id'], user['id_mes'])
+            except:
+                print('oops1')
+
+            for elem in user['id_media']:
+                try:
+                    bot.delete_message(user['id'], elem)
+                except:
+                    print('oops2')
+
+            bot.send_message(user['id'], text=f'В чат-боте произошли обновления. Чтобы посмотреть изменения, вам нужно перезапустить бота. \n\nНажмите /start')
+
+        os.remove(f'suncatcher/user_file/{js}')
+        print(f'удалено-{js}')
+                
 
 def delete_message(message, type):
     if type == 'media_and_text':
@@ -38,7 +66,6 @@ def show_catalog(message, step_pre=0):
     insert_table_suncatcher()
     insert_table_suncatcher_photo()
 
-
     title = '🌈 Какие ловцы солнца вы хотите посмотреть:\n\n'
     big_sun = '☀️☀️☀️ <b>Большие ловцы </b> - общей длиной 40 см и больше. Cтоимость - 4000р.\n\n'
     mid_sun = '☀️☀️ <b>Средние ловцы</b> ~ 30 см. Cтоимость - 3000р.\n\n'
@@ -56,8 +83,6 @@ def show_catalog(message, step_pre=0):
     markup_inline.add(item1)
     markup_inline.add(item2)
     markup_inline.add(item3)
-
-    insert_table_suncatcher()
 
     if step_pre == 'media':
         msg = bot.send_photo(message.from_user.id, url_photo, caption=text, reply_markup=markup_inline, parse_mode='HTML')
@@ -103,19 +128,20 @@ def show_choose_size_suncatcher_db(message, size, step_pre=0):
     #     item7 = types.InlineKeyboardButton(text='Продано', callback_data='sell_suncatcher')
     #     markup_inline.add(item7)
 
-    item9 = types.InlineKeyboardButton(text=f'{current_sun_title}', callback_data='none')
+    # item9 = types.InlineKeyboardButton(text=f'{current_sun_title}', callback_data='none')
     item10 = types.InlineKeyboardButton(text=f'💰 Цена - {current_sun_price[0:4]}р', callback_data='none')
     item = types.InlineKeyboardButton(text='💫 Описание/Фото', callback_data='more')
     item2 = types.InlineKeyboardButton(text='⬅️', callback_data=callback_data_back)
     item3 = types.InlineKeyboardButton(text='➡️', callback_data=callback_data_next)
-    item6 = types.InlineKeyboardButton(text='🎁 Заказать', callback_data='choose')
+    item6 = types.InlineKeyboardButton(text=f'🎁 Заказать ({current_sun_price[0:4]}р)', callback_data='choose')
     item4 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog')
     item5 = types.InlineKeyboardButton(text=f'{current_number_sun+1}/{amount_sun}', callback_data='none')
 
-    markup_inline.add(item9)
+    # markup_inline.add(item9)
     markup_inline.add(item2, item5, item3)
+    markup_inline.add(item6)
     markup_inline.add(item,item4)
-    markup_inline.add(item10, item6)
+    # markup_inline.add(item10, item6)
 
     if step_pre == 'media':
         msg = bot.send_photo(message.from_user.id, current_url_sun[0][0], reply_markup=markup_inline, parse_mode='HTML')
@@ -155,7 +181,8 @@ def show_choose_size_suncatcher_db_more(message, size):
 
     markup_inline = types.InlineKeyboardMarkup()
 
-    item = types.InlineKeyboardButton(text='🎁 Заказать', callback_data='choose1')
+    # item = types.InlineKeyboardButton(text='🎁 Заказать', callback_data='choose1')
+    item = types.InlineKeyboardButton(text=f'🎁 Заказать ({current_sun_price[0:4]}р)', callback_data='choose1')
     item2 = types.InlineKeyboardButton(text='⬅️ Назад', callback_data='back1')
     item4 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog1')
 
@@ -181,12 +208,13 @@ def choose(message, size, step_pre=0):
     current_sun_id = catalog[current_number_sun][0]
     current_url_sun = get_url_suncatcher(current_sun_id)
 
-    text = f'👍 Для заказа <b>{current_sun_title}</b> стоимостью <b>{current_sun_price[0:4]}</b> рублей  нажмите: \n\n✍️ <b>Написать</b> - чтобы связаться с мастером и лично обсудить детали заказа и доставки.\n\n🎁 <b>Заказать</b> - чтобы пройти процедуру заказа в автоматическом режиме.'
+    text = f'👍 Для заказа <b>{current_sun_title}</b> нажмите: \n\n✍️ <b>Написать</b> - чтобы связаться с мастером и лично обсудить детали заказа и доставки.\n\n🎁 <b>Заказать</b> - чтобы пройти процедуру заказа в автоматическом режиме.'
 
     markup_inline = types.InlineKeyboardMarkup()
 
     item = types.InlineKeyboardButton(text='✍️ Написать', url='https://t.me/Lunar_room')
-    item2 = types.InlineKeyboardButton(text='🎁 Заказать', callback_data='orderbot')
+    item2 = types.InlineKeyboardButton(text=f'🎁 Заказать ({current_sun_price[0:4]}р)', callback_data='orderbot')
+    # item2 = types.InlineKeyboardButton(text='🎁 Заказать', callback_data='orderbot')
     item3 = types.InlineKeyboardButton(text='⬅️ Назад', callback_data='back2')
     item4 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog')
 
@@ -351,7 +379,7 @@ def order_sun_via_bot(message, step, size):
         # update_step_order(step3=adress)
         update_table_user(message, adress=adress)
 
-        details_pay = f'👍 Отлично. Почти закончили!\n\n🚚 Доставка <b>{current_sun_title}</b> - {cost_ship} + стоимость ловца солнца - {current_sun_price[0:4]}р.\n\n<b>Итого</b> - {finish_cost} рублей. \n\n💳 Оплату можно перевести на карту Тинькоф или Сбербанк:\nПо номеру телефона: <b>89180119741</b> \n\nПолучатель: <b>Оксана Николаевна И.</b>\n\n'
+        details_pay = f'👍 Отлично. Почти закончили!\n\n🚚 Доставка <b>{current_sun_title}</b> - {cost_ship} + стоимость ловца солнца - {current_sun_price[0:4]}р.\n\n<b>Итого</b> - {finish_cost} рублей. \n\n💳 Оплату можно перевести на карту Тинькоф или Сбербанк:\n\nПо номеру телефона: <b>89180119741</b> \n\nПолучатель: <b>Оксана Николаевна И.</b>\n\n'
         script_one_step =  f'{details_pay}📬 Ваш адрес:\n\n <b>{adress}</b> \n\n✅ Если всё правильно, оплачивайте и нажимайте оплатил(a). В течении получаса вам придет номер для отслеживания посылки. \n\n‼️ В случае каких-то вопросов, вы всегда можете написать мне лично, нажав в любом месте чат-бота <b>✍️ Написать мастеру</b>'
 
         markup_inline = types.InlineKeyboardMarkup()
@@ -378,7 +406,7 @@ def order_sun_via_bot(message, step, size):
 
         adress = user1[0][4]
 
-        script_one_step = f'Поздравляю с покупкой <b>{current_sun_title}</b>. В течении получаса я оформлю посылку по адресу <b>{adress}</b> и вышлю вам трек-номер. Ожидайте.'
+        script_one_step = f'🎁 Поздравляю с покупкой <b>{current_sun_title}</b>! \n\nВ течении получаса я оформлю посылку по адресу: \n\n<b>{adress}</b>\n\nи вышлю вам трек-номер. Ожидайте.'
 
         markup_inline = types.InlineKeyboardMarkup()
 
@@ -386,12 +414,12 @@ def order_sun_via_bot(message, step, size):
         # item2 = types.InlineKeyboardButton(text='Проверить трекинг номер', callback_data='none')
         item3 = types.InlineKeyboardButton(text='✨ Каталог', callback_data='catalog')
         item4 = types.InlineKeyboardButton(text='✍️ Написать мастеру', url='https://t.me/Lunar_room')
-        item5 = types.InlineKeyboardButton(text='📦 Проверить трек-номер', callback_data='check_track')
+        # item5 = types.InlineKeyboardButton(text='📦 Проверить трек-номер', callback_data='check_track')
 
         markup_inline.add(item3)
         # markup_inline.add(item2)
         markup_inline.add(item4)
-        markup_inline.add(item5)
+        # markup_inline.add(item5)
 
         bot.edit_message_media(chat_id=message.from_user.id, message_id=current_message_id, media=types.InputMediaPhoto(current_url_sun[0][0], caption=script_one_step, parse_mode='HTML'), reply_markup=markup_inline)
 
@@ -413,7 +441,7 @@ def send_track(message):
 
     order = {}
 
-    current_data = get_current_state(message.from_user.id)
+    current_data = get_current_state(id)
 
     catalog = get_suncather_catalog(current_data[2])
 
@@ -435,7 +463,15 @@ def send_track(message):
     markup_inline.add(item3)
     markup_inline.add(item4)
 
-    bot.edit_message_media(chat_id=message.from_user.id, message_id=current_message_id, media=types.InputMediaPhoto(current_url_sun[0][0], caption=f'Спасибо за покупку! Ваш трек-номер:<b>{track_number}</b>\n\nЖдем вас еще!', parse_mode='HTML'), reply_markup=markup_inline)
+    # bot.send_message(user['id'], text=f'В чат-боте произошли обновления. Чтобы посмотреть изменения, вам нужно перезапустить бота. \n\nНажмите /start')
+
+    msg = bot.send_photo(id, current_url_sun[0][0], caption=f'Спасибо за покупку! \n\nВаш трек-номер:<b>{track_number}</b>', reply_markup=markup_inline, parse_mode='HTML')
+
+    print('dddddd', msg)
+
+    bot.delete_message(id, current_message_id)
+
+    update_current_state(msg, type='start')
 
     order_data = get_order(id)[0]
 
@@ -453,15 +489,15 @@ def send_track(message):
 @bot.message_handler(commands=['start'])
 def start(message):
 
-    # create_table_all()
-    insert_table_suncatcher()
-    insert_table_suncatcher_photo()
-    create_table_user()
-    # create_table_user_path()
+    try:
+        delete_message(message, type='photo')
+    except:
+        print('oops1')
 
-    # create_table_press_start()
-
-    # create_table_current_state()
+    try:
+        delete_message(message, type='media_and_text')
+    except:
+        print('oops1')
 
     update_table_press_start(message.from_user.id)
 
@@ -471,7 +507,7 @@ def start(message):
 
     user_name = message.from_user.first_name if message.from_user.first_name else message.from_user.username
 
-    text_message = f'✨ Привет, {user_name}! \n\n🌈 Добро пожаловать в <b>каталог</b> с ловцами солнца \n\n✅ Вы можете посмотреть здесь наличие.\n\n‼️ А если выберете цветочную луну по душе, то чат-бот пришлёт вам инструкцию, как заказать ловец солнца.'
+    text_message = f'✨ Привет, {user_name}! \n\n🌈 Добро пожаловать в <b>каталог</b> с ловцами солнца! \n\n✅ Вы можете посмотреть здесь наличие.\n\n‼️ А если выберете цветочную луну по душе, то чат-бот пришлёт вам инструкцию, как заказать ловец солнца.'
 
     url_photo = Path("suncatcher/admin_file/oksa.jpg")
     img = open(url_photo, 'rb')
@@ -484,22 +520,20 @@ def start(message):
 
     msg = bot.send_photo(message.from_user.id, img, caption=text_message, reply_markup=markup_inline, parse_mode='HTML')
     
-# отправка сообщения через file_id
-    # img_list = []
-    # img_list.append(types.InputMediaPhoto('AgACAgIAAxkDAAIkWGRffWPqBs072UfzyHs0L8YXXN2kAAKMxzEbTwfpSmHSqPFF3PHiAQADAgADcwADLwQ'))
-    # bot.send_media_group(message.from_user.id, img_list)
-
-    try:
-        delete_message(message, type='photo')
-    except:
-        print('oops1')
-
-    try:
-        delete_message(message, type='media_and_text')
-    except:
-        print('oops1')
-
     update_current_state(msg, type='start')
+
+# отправка сообщения через file_id
+#     img_list = []
+#     img_list.append(types.InputMediaPhoto('AgACAgIAAxkDAAIkWGRffWPqBs072UfzyHs0L8YXXN2kAAKMxzEbTwfpSmHSqPFF3PHiAQADAgADcwADLwQ'))
+#     bot.send_media_group(message.from_user.id, img_list)
+
+    
+@bot.message_handler(commands=['создать_таблицы'])
+def start(message):
+    if message.from_user.id == 257930228:
+        create_table_all()
+        update_patch()
+        print('admin создал и обновил все таблицы')
 
 
 @bot.callback_query_handler(func=lambda m: True)
@@ -584,11 +618,6 @@ def callback_choice(message):
 
     if t == 'send_track':
         send_track()
-
-
-@bot.message_handler(func=lambda m: True)
-def handler(message):
-    pass
 
 
 bot.infinity_polling()

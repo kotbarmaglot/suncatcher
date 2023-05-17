@@ -201,8 +201,6 @@ def insert_table_suncatcher():
     con.execute('PRAGMA foreign_keys = 1')
     cur = con.cursor()
 
-    create_table_suncatcher()
-
     catalog_vk = get_catalog_vk()
     category = ['big', 'mid', 'low']
 
@@ -210,13 +208,24 @@ def insert_table_suncatcher():
         for elem in catalog_vk[cat]:
             elem['catalog'] = cat
             elem['available'] = 'true'
-            cur.execute("INSERT OR IGNORE INTO suncatcher(id, title, description, price, catalog, available) VALUES(:id, :title, :description, :price, :catalog, :available)", elem)
+            cur.execute("INSERT OR IGNORE INTO `suncatcher` (id, title, description, price, catalog, available) VALUES(:id, :title, :description, :price, :catalog, :available)", elem).fetchall()
     con.commit()
     con.close()
 
 
+def get_table(table):
+    con = sqlite3.connect("suncatcher.db")
+    con.execute('PRAGMA foreign_keys = 1')
+    cur = con.cursor()
+
+    res = cur.execute(f"SELECT * FROM {table}").fetchall()
+
+    con.close()
+
+    return res
+
+
 def get_amount_suncatcher():
-    insert_table_suncatcher()
     amount = {}
     con = sqlite3.connect("suncatcher.db")
     con.execute('PRAGMA foreign_keys = 1')
@@ -239,14 +248,12 @@ def create_table_suncatcher_photo():
     cur = con.cursor()
 
     cur.execute('DROP TABLE IF EXISTS `suncatcher_photo`')
-
     con.execute('PRAGMA foreign_keys = 1')
 
     cur.execute("""
         CREATE TABLE `suncatcher_photo` (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             suncatcher_photo_id INTEGER NOT NULL,
-            url_photo TEXT NOT NULL,
+            url_photo TEXT UNIQUE,
             FOREIGN KEY (suncatcher_photo_id) REFERENCES suncatcher(id)
         )""")
     con.commit()
@@ -265,10 +272,9 @@ def insert_table_suncatcher_photo():
     for cat in category:
         for elem in catalog_vk[cat]:
             for url in elem['url_photo']:
-                
                 sun_photo['id'] = elem['id']
                 sun_photo['url_photo'] = url
-                cur.execute("INSERT OR IGNORE INTO suncatcher_photo(suncatcher_photo_id, url_photo) VALUES(:id, :url_photo)", sun_photo)
+                cur.execute("REPLACE INTO `suncatcher_photo` VALUES(:id, :url_photo)", sun_photo).fetchall()
     con.commit()
     con.close()
 
@@ -481,22 +487,6 @@ def get_user(id):
 
     return res
     
-
-# create_table_suncatcher()
-# insert_table_suncatcher()
-
-# create_table_suncatcher_photo()
-# insert_table_suncatcher_photo()
-
-# res = cur.execute("SELECT * FROM user")
-
-# res = cur.execute("SELECT * FROM suncatcher where id=12460561")
-# res2 = cur.execute("SELECT * FROM suncatcher_photo where suncatcher_id=12460561")
-
-# create_table_all()
-# insert_table_suncatcher()
-# insert_table_suncatcher_photo()
-
 
 def main():
     pass

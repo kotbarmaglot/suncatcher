@@ -6,7 +6,7 @@ authors = ["kotbarmaglot <allonewage@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.11"
+python = ">=3.8"
 pytelegrambotapi = "^4.11.0"
 vk = "^3.0"
 
