@@ -265,6 +265,8 @@ def insert_table_suncatcher_photo():
     con.execute('PRAGMA foreign_keys = 1')
     cur = con.cursor()
 
+    create_table_suncatcher_photo()
+
     catalog_vk = get_catalog_vk()
     category = ['big', 'mid', 'low']
     sun_photo = {}

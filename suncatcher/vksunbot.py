@@ -12,7 +12,9 @@ def market_get():
     return vkapi.market.get(count='100', extended=1, v=5.131, owner_id=VK_MARKET_ID)
 
 
-def get_catalog_vk(data=market_get()):
+def get_catalog_vk():
+
+    data = market_get()
 
     suns = {}
     suns['big'] = []
@@ -20,7 +22,7 @@ def get_catalog_vk(data=market_get()):
     suns['low'] = []
     suns['amount'] = {}
     # suns['date'] = str(datetime.datetime.now())[0:10]
-    
+
     for elem in data['items']:
         suncatcher = {}
         big = (elem['title'] != 'Доставка') and elem['owner_info']['category'] == 'Большие 40см'
